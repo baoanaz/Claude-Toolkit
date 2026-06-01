@@ -1,0 +1,39 @@
+{
+  "name": "claude-toolkit",
+  "owner": {
+    "name": "xuwenzheng"
+  },
+  "metadata": {
+    "description": "Claude Code 个人工具套件：面向 Linux C/C++ 嵌入式开发与 AI Agent 工程"
+  },
+  "plugins": [
+    {
+      "name": "claude-toolkit",
+      "source": "./",
+      "description": "Claude Code 工具套件：C/C++ + AI Agent，内置持续学习 v2、TDD/代码审查/安全工作流",
+      "version": "1.0.0",
+      "author": {
+        "name": "xuwenzheng"
+      },
+      "repository": "https://github.com/baoanaz/Claude-Toolkit",
+      "license": "MIT",
+      "keywords": [
+        "cpp",
+        "embedded",
+        "ai-agent",
+        "continuous-learning",
+        "tdd",
+        "code-review"
+      ],
+      "category": "workflow",
+      "tags": [
+        "cpp",
+        "embedded",
+        "ai-agent",
+        "tdd",
+        "code-review"
+      ],
+      "strict": false
+    }
+  ]
+}
