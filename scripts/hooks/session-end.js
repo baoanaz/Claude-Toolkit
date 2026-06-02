@@ -28,6 +28,9 @@ const {
 
 const SUMMARY_START_MARKER = '<!-- CT:SUMMARY:START -->';
 const SUMMARY_END_MARKER = '<!-- CT:SUMMARY:END -->';
+// Orphaned summary markers left over from the pre-rename (ECC -> CT) plugin era.
+// CT never writes these; this only cleans up legacy files migrated from ECC.
+const LEGACY_ECC_SUMMARY_MARKER_RE = /^[ \t]*<!-- ECC:SUMMARY:(?:START|END) -->[ \t]*\r?\n?/gm;
 const SESSION_SEPARATOR = '\n---\n';
 
 /**
@@ -241,7 +244,10 @@ async function main() {
     let updatedContent = existing;
 
     if (existing) {
-      const merged = mergeSessionHeader(existing, today, currentTime, sessionMetadata);
+      // Remove orphaned legacy ECC summary markers so they don't linger in
+      // CT files that were originally created by the old ECC plugin.
+      updatedContent = existing.replace(LEGACY_ECC_SUMMARY_MARKER_RE, '');
+      const merged = mergeSessionHeader(updatedContent, today, currentTime, sessionMetadata);
       if (merged) {
         updatedContent = merged;
       } else {
