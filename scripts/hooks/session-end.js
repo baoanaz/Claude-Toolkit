@@ -37,6 +37,21 @@ const SESSION_SEPARATOR = '\n---\n';
  * - Tools used
  * - Files modified
  */
+function isNoiseUserMessage(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  const noisePrefixes = [
+    'Your tool call was malformed',
+    '## Context Usage',
+    'Context Usage',
+    '[Request interrupted',
+    '<command-name>',
+    '<local-command',
+    'Caveat:',
+  ];
+  return noisePrefixes.some(prefix => t.startsWith(prefix));
+}
+
 function extractSessionSummary(transcriptPath) {
   const content = readFile(transcriptPath);
   if (!content) return null;
@@ -46,6 +61,8 @@ function extractSessionSummary(transcriptPath) {
   const toolsUsed = new Set();
   const filesModified = new Set();
   let parseErrors = 0;
+  let aiTitle = '';
+  let lastAssistantText = '';
 
   for (const line of lines) {
     try {
@@ -61,9 +78,14 @@ function extractSessionSummary(transcriptPath) {
             ? rawContent.map(c => (c && c.text) || '').join(' ')
             : '';
         const cleaned = stripAnsi(text).trim();
-        if (cleaned) {
+        if (cleaned && !isNoiseUserMessage(cleaned)) {
           userMessages.push(cleaned.slice(0, 200));
         }
+      }
+
+      // Claude Code's auto-generated session title (latest wins)
+      if (entry.type === 'ai-title' && entry.aiTitle) {
+        aiTitle = String(entry.aiTitle).trim();
       }
 
       // Collect tool names and modified files (direct tool_use entries)
@@ -88,6 +110,9 @@ function extractSessionSummary(transcriptPath) {
             if (filePath && (toolName === 'Edit' || toolName === 'Write')) {
               filesModified.add(filePath);
             }
+          } else if (block.type === 'text' && block.text && block.text.trim()) {
+            // Keep the latest non-empty assistant prose as the session outcome
+            lastAssistantText = block.text.trim();
           }
         }
       }
@@ -103,6 +128,8 @@ function extractSessionSummary(transcriptPath) {
   if (userMessages.length === 0) return null;
 
   return {
+    aiTitle,
+    conclusion: lastAssistantText.replace(/\s+/g, ' ').trim().slice(0, 600),
     userMessages: userMessages.slice(-10), // Last 10 user messages
     toolsUsed: Array.from(toolsUsed).slice(0, 20),
     filesModified: Array.from(filesModified).slice(0, 30),
@@ -293,6 +320,11 @@ async function main() {
 function buildSummarySection(summary) {
   let section = '## Session Summary\n\n';
 
+  // Topic (Claude Code's auto-generated session title)
+  if (summary.aiTitle) {
+    section += `**Topic:** ${summary.aiTitle.replace(/\n/g, ' ')}\n\n`;
+  }
+
   // Tasks (from user messages — collapse newlines and escape backticks to prevent markdown breaks)
   section += '### Tasks\n';
   for (const msg of summary.userMessages) {
@@ -312,6 +344,11 @@ function buildSummarySection(summary) {
   // Tools used
   if (summary.toolsUsed.length > 0) {
     section += `### Tools Used\n${summary.toolsUsed.join(', ')}\n\n`;
+  }
+
+  // Outcome (latest assistant prose — what was actually done/concluded)
+  if (summary.conclusion) {
+    section += `### Outcome\n${summary.conclusion.replace(/`/g, '\\`')}\n\n`;
   }
 
   section += `### Stats\n- Total user messages: ${summary.totalMessages}\n`;
