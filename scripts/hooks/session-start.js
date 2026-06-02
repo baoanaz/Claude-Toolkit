@@ -528,6 +528,26 @@ async function main() {
   }
 
   if (shouldInjectContext) {
+    // Inject the project handoff document (HANDOFF.md) from the working
+    // directory when present. Unlike the prior-session summary, this is an
+    // ACTIONABLE handoff: its "next steps" are meant to be continued, not
+    // treated as frozen history. Placed first so it is the least likely part
+    // to be dropped by the CT_SESSION_START_MAX_CHARS truncation cap.
+    const handoffPath = path.join(process.cwd(), 'HANDOFF.md');
+    const handoffContent = fs.existsSync(handoffPath)
+      ? stripAnsi(readFile(handoffPath) || '')
+      : '';
+    if (handoffContent.trim()) {
+      log(`[SessionStart] Loaded handoff document: ${handoffPath}`);
+      additionalContextParts.push(
+        [
+          'Project handoff document (HANDOFF.md) — ACTIONABLE, not frozen history.',
+          'Continue from its "Next steps" after verifying current repo/working-tree state:',
+          handoffContent,
+        ].join('\n')
+      );
+    }
+
     const instinctSummary = summarizeActiveInstincts(observerContext);
     if (instinctSummary) {
       additionalContextParts.push(instinctSummary);
