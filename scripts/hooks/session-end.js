@@ -48,6 +48,7 @@ function isNoiseUserMessage(text) {
     '<command-name>',
     '<local-command',
     'Caveat:',
+    '※ recap:',
   ];
   return noisePrefixes.some(prefix => t.startsWith(prefix));
 }
@@ -63,6 +64,7 @@ function extractSessionSummary(transcriptPath) {
   let parseErrors = 0;
   let aiTitle = '';
   let lastAssistantText = '';
+  let recap = '';
 
   for (const line of lines) {
     try {
@@ -86,6 +88,12 @@ function extractSessionSummary(transcriptPath) {
       // Claude Code's auto-generated session title (latest wins)
       if (entry.type === 'ai-title' && entry.aiTitle) {
         aiTitle = String(entry.aiTitle).trim();
+      }
+
+      // Claude Code's periodic session recap (away_summary): progress + next
+      // step. The richest single field — closest thing to an auto handoff.
+      if (entry.type === 'system' && entry.subtype === 'away_summary' && entry.content) {
+        recap = String(entry.content).replace(/\s*\(disable recaps in \/config\)\s*$/, '').trim();
       }
 
       // Collect tool names and modified files (direct tool_use entries)
@@ -129,6 +137,7 @@ function extractSessionSummary(transcriptPath) {
 
   return {
     aiTitle,
+    recap: recap.replace(/\s+/g, ' ').trim().slice(0, 800),
     conclusion: lastAssistantText.replace(/\s+/g, ' ').trim().slice(0, 600),
     userMessages: userMessages.slice(-10), // Last 10 user messages
     toolsUsed: Array.from(toolsUsed).slice(0, 20),
@@ -323,6 +332,11 @@ function buildSummarySection(summary) {
   // Topic (Claude Code's auto-generated session title)
   if (summary.aiTitle) {
     section += `**Topic:** ${summary.aiTitle.replace(/\n/g, ' ')}\n\n`;
+  }
+
+  // Recap (Claude Code's periodic progress summary — progress + next step)
+  if (summary.recap) {
+    section += `### Recap\n${summary.recap.replace(/`/g, '\\`')}\n\n`;
   }
 
   // Tasks (from user messages — collapse newlines and escape backticks to prevent markdown breaks)
