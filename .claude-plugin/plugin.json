@@ -1,7 +1,7 @@
 {
   "name": "claude-toolkit",
   "version": "1.0.0",
-  "description": "Claude Code 工具套件：面向 Linux C/C++ 嵌入式开发与 AI Agent 工程，内置持续学习、TDD、代码审查等工作流",
+  "description": "Claude Code 工具套件：面向 Linux C/C++ 嵌入式开发与 AI Agent 工程，内置自动持续学习、主动知识沉淀、TDD、代码审查等工作流",
   "author": {
     "name": "xuwenzheng"
   },

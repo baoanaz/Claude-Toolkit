@@ -31,16 +31,12 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const CURRENT_PLUGIN_SLUG = 'claude-toolkit';
-const LEGACY_PLUGIN_SLUG = 'ecc';
 const KNOWN_PLUGIN_PATHS = [
   [CURRENT_PLUGIN_SLUG],
   [`${CURRENT_PLUGIN_SLUG}@${CURRENT_PLUGIN_SLUG}`],
   ['marketplace', CURRENT_PLUGIN_SLUG],
-  [LEGACY_PLUGIN_SLUG],
-  [`${LEGACY_PLUGIN_SLUG}@${LEGACY_PLUGIN_SLUG}`],
-  ['marketplace', LEGACY_PLUGIN_SLUG],
 ];
-const CACHE_PLUGIN_SLUGS = [CURRENT_PLUGIN_SLUG, LEGACY_PLUGIN_SLUG];
+const CACHE_PLUGIN_SLUGS = [CURRENT_PLUGIN_SLUG];
 
 // Read the raw JSON event from stdin
 const raw = fs.readFileSync(0, 'utf8');
@@ -64,8 +60,8 @@ function hasRunnerRoot(candidate) {
  * Resolves the CT plugin root using the following priority order:
  *   1. CLAUDE_PLUGIN_ROOT environment variable
  *   2. ~/.claude (direct install)
- *   3. Several well-known plugin sub-paths under ~/.claude/plugins/ (current + legacy)
- *   4. Versioned cache directories under ~/.claude/plugins/cache/{claude-toolkit,ecc}/
+ *   3. Several well-known plugin sub-paths under ~/.claude/plugins/
+ *   4. Versioned cache directories under ~/.claude/plugins/cache/claude-toolkit/
  *   5. Falls back to ~/.claude if nothing else matches
  *
  * @returns {string}
@@ -93,7 +89,7 @@ function resolvePluginRoot() {
     }
   }
 
-  // Walk versioned cache: ~/.claude/plugins/cache/{claude-toolkit,ecc}/<org>/<version>/
+  // Walk versioned cache: ~/.claude/plugins/cache/claude-toolkit/<org>/<version>/
   try {
     for (const slug of CACHE_PLUGIN_SLUGS) {
       const cacheBase = path.join(claudeDir, 'plugins', 'cache', slug);

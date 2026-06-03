@@ -86,18 +86,25 @@ Claude-Toolkit/
 |   |-- performance-optimizer.md # 性能瓶颈分析与优化
 |   `-- python-reviewer.md       # Python PEP8 与类型审查
 |
-|-- commands/                    # 7 个斜杠命令
+|-- commands/                    # 13 个斜杠命令
 |   |-- code-review.md           # /code-review 代码审查
 |   |-- cpp-build.md             # /cpp-build C++ 构建修复
+|   |-- evolve.md                # /evolve 本能进化分析
+|   |-- instinct-export.md       # /instinct-export 导出本能
+|   |-- instinct-import.md       # /instinct-import 导入本能
+|   |-- instinct-status.md       # /instinct-status 查看本能
 |   |-- jira.md                  # /jira 工单查询与操作
-|   |-- learned.md               # /learned 提取会话模式
 |   |-- plan.md                  # /plan 规划实现步骤
+|   |-- projects.md              # /projects 查看学习项目
+|   |-- promote.md               # /promote 提升项目本能
+|   |-- prune.md                 # /prune 清理过期待审本能
 |   |-- resume-session.md        # /resume-session 恢复上次会话
 |   `-- save-session.md          # /save-session 保存当前状态
 |
-|-- skills/                      # 3 个技能包
+|-- skills/                      # 4 个技能包
 |   |-- continuous-learning-v2/  # 基于 instinct 的持续学习
 |   |-- jira-integration/        # Jira MCP/REST 操作模式
+|   |-- learned/                 # 主动提取并沉淀会话模式
 |   `-- strategic-compact/       # 逻辑间隔主动压缩策略
 |
 |-- rules/                       # 编码规则（通用 + 2 语言 + 中文）

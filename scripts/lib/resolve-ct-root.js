@@ -5,17 +5,12 @@ const path = require('path');
 const os = require('os');
 
 const CURRENT_PLUGIN_SLUG = 'claude-toolkit';
-const LEGACY_PLUGIN_SLUG = 'ecc';
 const CURRENT_PLUGIN_HANDLE = `${CURRENT_PLUGIN_SLUG}@${CURRENT_PLUGIN_SLUG}`;
-const LEGACY_PLUGIN_HANDLE = `${LEGACY_PLUGIN_SLUG}@${LEGACY_PLUGIN_SLUG}`;
-const PLUGIN_CACHE_SLUGS = [CURRENT_PLUGIN_SLUG, LEGACY_PLUGIN_SLUG];
+const PLUGIN_CACHE_SLUGS = [CURRENT_PLUGIN_SLUG];
 const PLUGIN_ROOT_SEGMENTS = [
   [CURRENT_PLUGIN_SLUG],
   [CURRENT_PLUGIN_HANDLE],
   ['marketplace', CURRENT_PLUGIN_SLUG],
-  [LEGACY_PLUGIN_SLUG],
-  [LEGACY_PLUGIN_HANDLE],
-  ['marketplace', LEGACY_PLUGIN_SLUG],
 ];
 
 /**
@@ -24,8 +19,8 @@ const PLUGIN_ROOT_SEGMENTS = [
  * Tries, in order:
  *   1. CLAUDE_PLUGIN_ROOT env var (set by Claude Code for hooks, or by user)
  *   2. Standard install location (~/.claude/) — when scripts exist there
- *   3. Known plugin roots under ~/.claude/plugins/ (current + legacy slugs)
- *   4. Plugin cache auto-detection — scans ~/.claude/plugins/cache/{claude-toolkit,ecc}/
+ *   3. Known plugin roots under ~/.claude/plugins/
+ *   4. Plugin cache auto-detection — scans ~/.claude/plugins/cache/claude-toolkit/
  *   5. Fallback to ~/.claude/ (original behaviour)
  *
  * @param {object} [options]
@@ -53,13 +48,11 @@ function resolveCtRoot(options = {}) {
     return claudeDir;
   }
 
-  // Exact legacy plugin install locations. These preserve backwards
-  // compatibility without scanning arbitrary plugin trees.
-  const legacyPluginRoots = PLUGIN_ROOT_SEGMENTS.map((segments) =>
+  const knownPluginRoots = PLUGIN_ROOT_SEGMENTS.map((segments) =>
     path.join(claudeDir, 'plugins', ...segments)
   );
 
-  for (const candidate of legacyPluginRoots) {
+  for (const candidate of knownPluginRoots) {
     if (fs.existsSync(path.join(candidate, probe))) {
       return candidate;
     }

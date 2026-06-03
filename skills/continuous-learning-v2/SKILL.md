@@ -1,53 +1,35 @@
 ---
 name: continuous-learning-v2
-description: 基于本能的学习系统，通过钩子观察会话，创建带置信度评分的原子本能，并将其进化为技能/命令/代理。v2.1版本增加了项目范围的本能，以防止跨项目污染。
+description: 基于本能的持续学习系统，通过钩子观察会话，创建带置信度评分的原子本能，并将其进化为技能/命令/代理。
 origin: Claude-Toolkit
 version: 2.1.0
 ---
 
-# 持续学习 v2.1 - 基于本能
+# 持续学习 v2.1 - 基于本能的架构
 
-的架构
-
-一个高级学习系统，通过原子化的“本能”——带有置信度评分的小型习得行为——将你的 Claude Code 会话转化为可重用的知识。
-
-**v2.1** 新增了**项目作用域的本能** — React 模式保留在你的 React 项目中，Python 约定保留在你的 Python 项目中，而通用模式（如“始终验证输入”）则全局共享。
+这个技能把 Claude Code 会话转化为可复用知识：钩子持续记录工具调用和结果，后台观察器从观察记录里提取稳定模式，形成带置信度和作用域的原子“本能”。多个相关本能可以继续进化为技能、命令或代理。
 
 ## 何时激活
 
-* 设置从 Claude Code 会话自动学习
-* 通过钩子配置基于本能的行为提取
-* 调整已学习行为的置信度阈值
-* 查看、导出或导入本能库
-* 将本能进化为完整的技能、命令或代理
-* 管理项目作用域与全局本能
-* 将本能从项目作用域提升到全局作用域
+- 设置从 Claude Code 会话自动学习
+- 配置观察钩子和后台观察器
+- 查看、导出或导入本能库
+- 将本能进化为技能、命令或代理
+- 管理项目作用域与全局本能
+- 将项目本能提升为全局本能
 
-## v2.1 的新特性
+## 核心能力
 
-| 特性 | v2.0 | v2.1 |
-|---------|------|------|
-| 存储 | 全局 (~/.claude/homunculus/) | 项目作用域 (projects/<hash>/) |
-| 作用域 | 所有本能随处适用 | 项目作用域 + 全局 |
-| 检测 | 无 | git remote URL / 仓库路径 |
-| 提升 | 不适用 | 在 2+ 个项目中出现时，项目 → 全局 |
-| 命令 | 4个 (status/evolve/export/import) | 6个 (+promote/projects) |
-| 跨项目 | 存在污染风险 | 默认隔离 |
-
-## v2 的新特性（对比 v1）
-
-| 特性 | v1 | v2 |
-|---------|----|----|
-| 观察 | 停止钩子（会话结束） | PreToolUse/PostToolUse (100% 可靠) |
-| 分析 | 主上下文 | 后台代理 (Haiku) |
-| 粒度 | 完整技能 | 原子化“本能” |
-| 置信度 | 无 | 0.3-0.9 加权 |
-| 进化 | 直接进化为技能 | 本能 -> 聚类 -> 技能/命令/代理 |
-| 共享 | 无 | 导出/导入本能 |
+| 能力 | 说明 |
+|------|------|
+| 确定性观察 | `PreToolUse` / `PostToolUse` 钩子捕获工具调用开始和完成事件 |
+| 项目隔离 | 按 git remote 或仓库根路径生成项目 ID，避免跨项目污染 |
+| 原子本能 | 每个本能只描述一个触发条件和一个动作 |
+| 置信度评分 | 用 0.3-0.9 表示模式稳定程度 |
+| 本地存储 | 观察记录、本能和进化产物都保存在本机 |
+| 主动命令 | `/instinct-status`、`/evolve`、`/instinct-export`、`/instinct-import`、`/promote`、`/projects`、`/prune` |
 
 ## 本能模型
-
-一个本能是一个小型习得行为：
 
 ```yaml
 ---
@@ -71,84 +53,78 @@ Use functional patterns over classes when appropriate.
 - User corrected class-based approach to functional on 2025-01-15
 ```
 
-**属性：**
+本能属性：
 
-* **原子化** -- 一个触发条件，一个动作
-* **置信度加权** -- 0.3 = 试探性，0.9 = 几乎确定
-* **领域标记** -- 代码风格、测试、git、调试、工作流等
-* **有证据支持** -- 追踪是哪些观察创建了它
-* **作用域感知** -- `project` (默认) 或 `global`
+- **原子化**：一个触发条件，一个动作
+- **置信度加权**：0.3 = 试探性，0.9 = 近乎确定
+- **领域标记**：代码风格、测试、git、调试、工作流等
+- **证据支持**：记录观察来源和最后出现时间
+- **作用域感知**：`project` 默认项目级，`global` 全局级
 
-## 工作原理
+## 工作链路
 
-```
+```text
 会话活动（在 git 仓库中）
       |
-      | 钩子捕获提示 + 工具使用（100% 可靠）
-      | + 检测项目上下文（git remote / 仓库路径）
+      | PreToolUse / PostToolUse 捕获工具使用
+      | detect-project.sh 检测项目上下文
       v
-+---------------------------------------------+
-|  projects/<project-hash>/observations.jsonl  |
-|   （提示、工具调用、结果、项目）               |
-+---------------------------------------------+
+projects/<project-hash>/observations.jsonl
       |
-      | 观察者代理读取（后台，Haiku）
+      | observer-loop.sh 后台分析
       v
-+---------------------------------------------+
-|          模式检测                            |
-|   * 用户修正 -> 直觉                          |
-|   * 错误解决 -> 直觉                          |
-|   * 重复工作流 -> 直觉                        |
-|   * 范围决策：项目级或全局？                   |
-+---------------------------------------------+
+模式检测
+  - 用户纠正 -> 本能
+  - 错误解决 -> 本能
+  - 重复工作流 -> 本能
+  - 范围决策 -> project 或 global
       |
-      | 创建/更新
       v
-+---------------------------------------------+
-|  projects/<project-hash>/instincts/personal/ |
-|   * prefer-functional.yaml (0.7) [项目]      |
-|   * use-react-hooks.yaml (0.9) [项目]        |
-+---------------------------------------------+
-|  instincts/personal/  （全局）                |
-|   * always-validate-input.yaml (0.85) [全局] |
-|   * grep-before-edit.yaml (0.6) [全局]       |
-+---------------------------------------------+
+projects/<project-hash>/instincts/personal/
+instincts/personal/
       |
-      | /evolve 聚类 + /promote
+      | /evolve 聚类，/promote 提升
       v
-+---------------------------------------------+
-|  projects/<hash>/evolved/ （项目范围）        |
-|  evolved/ （全局）                            |
-|   * commands/new-feature.md                  |
-|   * skills/testing-workflow.md               |
-|   * agents/refactor-specialist.md            |
-+---------------------------------------------+
+projects/<project-hash>/evolved/
+evolved/
+```
+
+## 数据目录
+
+持续学习数据默认不写入 `~/.claude`，避免后台写入被敏感路径保护拦截。目录解析优先级：
+
+1. `CLV2_HOMUNCULUS_DIR`，必须是绝对路径
+2. `$XDG_DATA_HOME/claude-toolkit-homunculus`，当 `XDG_DATA_HOME` 是绝对路径
+3. `$HOME/.local/share/claude-toolkit-homunculus`
+
+如果旧版本已在 `~/.claude/homunculus` 存有数据，可执行一次迁移：
+
+```bash
+bash skills/continuous-learning-v2/scripts/migrate-homunculus.sh
 ```
 
 ## 项目检测
 
-系统会自动检测您当前的项目：
+系统会自动检测当前项目：
 
-1. **`CLAUDE_PROJECT_DIR` 环境变量** (最高优先级)
-2. **`git remote get-url origin`** -- 哈希化以创建可移植的项目 ID (同一仓库在不同机器上获得相同的 ID)
-3. **`git rev-parse --show-toplevel`** -- 使用仓库路径作为后备方案 (机器特定)
-4. **全局后备方案** -- 如果未检测到项目，本能将进入全局作用域
+1. `CLAUDE_PROJECT_DIR` 环境变量，优先解析到 git 仓库根目录
+2. `git remote get-url origin`，规范化后哈希，保证同一远端在不同机器得到同一项目 ID
+3. `git rev-parse --show-toplevel`，无远端时用主 worktree 根路径作为后备
+4. 无项目上下文时使用全局作用域
 
-每个项目都会获得一个 12 字符的哈希 ID (例如 `a1b2c3d4e5f6`)。`~/.claude/homunculus/projects.json` 处的注册表文件将 ID 映射到人类可读的名称。
+每个项目得到一个 12 字符哈希 ID，例如 `a1b2c3d4e5f6`。项目注册表位于数据目录下的 `projects.json`。
 
 ## 快速开始
 
-### 1. 启用观察钩子
+### 插件安装
 
-添加到你的 `~/.claude/settings.json` 中。
+作为 Claude-Toolkit 插件安装时，不需要在 `~/.claude/settings.json` 里额外添加 hook。插件的 `hooks/hooks.json` 已注册观察钩子。
 
-**如果作为插件安装**（推荐）：
+如果你之前手动复制过 `observe.sh` 到 `settings.json`，请删除重复的 `PreToolUse` / `PostToolUse` 配置。重复注册会导致同一事件被记录多次。
 
-不需要在 `~/.claude/settings.json` 中额外添加 hooks。Claude Code v2.1+ 会自动加载插件的 `hooks/hooks.json`，其中已经注册了 `observe.sh`。
+### 手动安装
 
-如果您之前把 `observe.sh` 复制到了 `~/.claude/settings.json`，请删除重复的 `PreToolUse` / `PostToolUse` 配置。重复注册会导致重复执行，并触发 `${CLAUDE_PLUGIN_ROOT}` 解析错误，因为该变量只会在插件自己的 `hooks/hooks.json` 中展开。
-
-**如果手动安装**到 `~/.claude/skills`，请将以下内容添加到 `~/.claude/settings.json`：
+如果手动安装到 `~/.claude/skills`，可将以下内容添加到 `~/.claude/settings.json`：
 
 ```json
 {
@@ -171,42 +147,29 @@ Use functional patterns over classes when appropriate.
 }
 ```
 
-### 2. 初始化目录结构
-
-系统会在首次使用时自动创建目录，但您也可以手动创建：
-
-```bash
-# Global directories
-mkdir -p ~/.claude/homunculus/{instincts/{personal,inherited},evolved/{agents,skills,commands},projects}
-
-# Project directories are auto-created when the hook first runs in a git repo
-```
-
-### 3. 使用本能命令
-
-```bash
-/instinct-status     # Show learned instincts (project + global)
-/evolve              # Cluster related instincts into skills/commands
-/instinct-export     # Export instincts to file
-/instinct-import     # Import instincts from others
-/promote             # Promote project instincts to global scope
-/projects            # List all known projects and their instinct counts
-```
-
 ## 命令
 
 | 命令 | 描述 |
-|---------|-------------|
-| `/instinct-status` | 显示所有本能 (项目作用域 + 全局) 及其置信度 |
-| `/evolve` | 将相关本能聚类成技能/命令，建议提升 |
-| `/instinct-export` | 导出本能 (可按作用域/领域过滤) |
-| `/instinct-import <file>` | 导入本能 (带作用域控制) |
+|------|------|
+| `/instinct-status` | 显示项目级和全局本能，按领域分组并展示置信度 |
+| `/evolve` | 聚类相关本能，建议或生成技能、命令、代理 |
+| `/instinct-export` | 导出本能，可按作用域、领域、置信度过滤 |
+| `/instinct-import <file-or-url>` | 导入本能到项目或全局作用域 |
 | `/promote [id]` | 将项目本能提升到全局作用域 |
-| `/projects` | 列出所有已知项目及其本能数量 |
+| `/projects` | 列出项目注册表和本能/观察数量 |
+| `/prune` | 清理过期的待审本能 |
+
+也可以直接调用脚本：
+
+```bash
+python3 skills/continuous-learning-v2/scripts/instinct-cli.py status
+python3 skills/continuous-learning-v2/scripts/instinct-cli.py evolve --generate
+python3 skills/continuous-learning-v2/scripts/instinct-cli.py projects
+```
 
 ## 配置
 
-编辑 `config.json` 以控制后台观察器：
+编辑 `skills/continuous-learning-v2/config.json` 控制后台观察器：
 
 ```json
 {
@@ -220,136 +183,102 @@ mkdir -p ~/.claude/homunculus/{instincts/{personal,inherited},evolved/{agents,sk
 ```
 
 | 键 | 默认值 | 描述 |
-|-----|---------|-------------|
-| `observer.enabled` | `false` | 启用后台观察器代理 |
-| `observer.run_interval_minutes` | `5` | 观察器分析观察结果的频率 |
-| `observer.min_observations_to_analyze` | `20` | 运行分析所需的最小观察次数 |
+|----|--------|------|
+| `observer.enabled` | `false` | 是否启用后台观察器代理 |
+| `observer.run_interval_minutes` | `5` | 后台观察器分析观察结果的间隔 |
+| `observer.min_observations_to_analyze` | `20` | 触发一次分析所需的最少观察条数 |
 
-其他行为 (观察捕获、本能阈值、项目作用域、提升标准) 通过 `instinct-cli.py` 和 `observe.sh` 中的代码默认值进行配置。
+其他行为，如观察捕获、本能阈值、项目作用域、提升标准，由 `observe.sh`、`detect-project.sh` 和 `instinct-cli.py` 的代码默认值控制。
 
 ## 文件结构
 
-```
-~/.claude/homunculus/
-+-- identity.json           # 你的个人资料，技术水平
-+-- projects.json           # 注册表：项目哈希 -> 名称/路径/远程地址
-+-- observations.jsonl      # 全局观察记录（备用）
-+-- instincts/
-|   +-- personal/           # 全局自动学习的本能
-|   +-- inherited/          # 全局导入的本能
-+-- evolved/
-|   +-- agents/             # 全局生成的代理
-|   +-- skills/             # 全局生成的技能
-|   +-- commands/           # 全局生成的命令
-+-- projects/
-    +-- a1b2c3d4e5f6/       # 项目哈希（来自 git 远程 URL）
-    |   +-- project.json    # 项目级元数据镜像（ID/名称/根目录/远程地址）
-    |   +-- observations.jsonl
-    |   +-- observations.archive/
-    |   +-- instincts/
-    |   |   +-- personal/   # 项目特定自动学习的
-    |   |   +-- inherited/  # 项目特定导入的
-    |   +-- evolved/
-    |       +-- skills/
-    |       +-- commands/
-    |       +-- agents/
-    +-- f6e5d4c3b2a1/       # 另一个项目
-        +-- ...
+```text
+${XDG_DATA_HOME:-$HOME/.local/share}/claude-toolkit-homunculus/
+|-- projects.json
+|-- observations.jsonl
+|-- instincts/
+|   |-- personal/
+|   `-- inherited/
+|-- evolved/
+|   |-- agents/
+|   |-- skills/
+|   `-- commands/
+`-- projects/
+    `-- a1b2c3d4e5f6/
+        |-- project.json
+        |-- observations.jsonl
+        |-- observations.archive/
+        |-- instincts/
+        |   |-- personal/
+        |   |-- inherited/
+        |   `-- pending/
+        `-- evolved/
+            |-- skills/
+            |-- commands/
+            `-- agents/
 ```
 
-## 作用域决策指南
+## 作用域决策
 
-| 模式类型 | 作用域 | 示例 |
-|-------------|-------|---------|
-| 语言/框架约定 | **项目** | "使用 React hooks", "遵循 Django REST 模式" |
-| 文件结构偏好 | **项目** | "测试放在 `__tests__`/", "组件放在 src/components/" |
-| 代码风格 | **项目** | "使用函数式风格", "首选数据类" |
-| 错误处理策略 | **项目** | "对错误使用 Result 类型" |
-| 安全实践 | **全局** | "验证用户输入", "清理 SQL" |
-| 通用最佳实践 | **全局** | "先写测试", "始终处理错误" |
-| 工具工作流偏好 | **全局** | "编辑前先 Grep", "写入前先读取" |
-| Git 实践 | **全局** | "约定式提交", "小而专注的提交" |
+| 模式类型 | 建议作用域 | 示例 |
+|----------|------------|------|
+| 语言/框架约定 | project | 使用 React hooks、遵循 Django REST 模式 |
+| 文件结构偏好 | project | 测试放在 `__tests__/`、组件放在 `src/components/` |
+| 代码风格 | project | 使用函数式风格、首选 dataclass |
+| 错误处理策略 | project | 对错误使用 Result 类型 |
+| 安全实践 | global | 验证用户输入、清理 SQL |
+| 通用最佳实践 | global | 先写测试、始终处理错误 |
+| 工具工作流偏好 | global | 编辑前先搜索、写入前先读取 |
+| Git 实践 | global | 约定式提交、小而聚焦的提交 |
 
-## 本能提升 (项目 -> 全局)
+如果不确定，默认选择 `project`。项目本能可以后续提升到全局，反向清理全局污染成本更高。
 
-当同一个本能在多个项目中以高置信度出现时，它就有资格被提升到全局作用域。
+## 本能提升
 
-**自动提升标准：**
+当同一模式在多个项目中高置信度出现时，可以提升到全局。
 
-* 相同的本能 ID 出现在 2+ 个项目中
-* 平均置信度 >= 0.8
+自动提升标准：
 
-**如何提升：**
+- 相同本能 ID 出现在 2 个或更多项目
+- 平均置信度大于等于 0.8
+
+常用命令：
 
 ```bash
-# Promote a specific instinct
-python3 instinct-cli.py promote prefer-explicit-errors
-
-# Auto-promote all qualifying instincts
-python3 instinct-cli.py promote
-
-# Preview without changes
-python3 instinct-cli.py promote --dry-run
+python3 skills/continuous-learning-v2/scripts/instinct-cli.py promote prefer-explicit-errors
+python3 skills/continuous-learning-v2/scripts/instinct-cli.py promote --dry-run
+python3 skills/continuous-learning-v2/scripts/instinct-cli.py promote --force
 ```
-
-`/evolve` 命令也会建议可提升的候选本能。
 
 ## 置信度评分
 
-置信度随时间演变：
-
 | 分数 | 含义 | 行为 |
-|-------|---------|----------|
-| 0.3 | 尝试性的 | 建议但不强制执行 |
-| 0.5 | 中等的 | 相关时应用 |
-| 0.7 | 强烈的 | 自动批准应用 |
-| 0.9 | 近乎确定的 | 核心行为 |
+|------|------|------|
+| 0.3 | 试探性 | 建议但不强制 |
+| 0.5 | 中等 | 相关时应用 |
+| 0.7 | 强 | 可作为默认偏好 |
+| 0.9 | 近乎确定 | 核心行为 |
 
-**置信度增加**当：
+置信度增加场景：
 
-* 模式被反复观察到
-* 用户未纠正建议的行为
-* 来自其他来源的相似本能一致
+- 模式被反复观察到
+- 用户没有纠正该行为
+- 相似本能互相支持
 
-**置信度降低**当：
+置信度降低场景：
 
-* 用户明确纠正该行为
-* 长时间未观察到该模式
-* 出现矛盾证据
-
-## 为什么用钩子而非技能进行观察？
-
-> "v1 依赖技能来观察。技能是概率性的 -- 根据 Claude 的判断，它们触发的概率约为 50-80%。"
-
-钩子**100% 触发**，是确定性的。这意味着：
-
-* 每次工具调用都被观察到
-* 不会错过任何模式
-* 学习是全面的
-
-## 向后兼容性
-
-v2.1 与 v2.0 和 v1 完全兼容：
-
-* `~/.claude/homunculus/instincts/` 中现有的全局本能仍然作为全局本能工作
-* 来自 v1 的现有 `~/.claude/skills/learned/` 技能仍然有效
-* 停止钩子仍然运行 (但现在也会输入到 v2)
-* 逐步迁移：并行运行两者
+- 用户明确纠正该行为
+- 长时间未再次观察到该模式
+- 出现矛盾证据
 
 ## 隐私
 
-* 观察结果**本地**保留在您的机器上
-* 项目作用域的本能按项目隔离
-* 只有**本能** (模式) 可以被导出 — 而不是原始观察数据
-* 不会共享实际的代码或对话内容
-* 您控制导出和提升的内容
+- 观察记录和本能保留在本机
+- 项目级本能按项目隔离
+- 导出对象是“模式”，不是原始对话或代码
+- 观察记录会做常见 secret 字段脱敏
+- 用户控制导出、导入和提升
 
-## 相关链接
+## 与主动沉淀的关系
 
-* [技能创建器](https://skill-creator.app) - 从仓库历史生成本能
-* Homunculus - 启发了 v2 基于本能的架构的社区项目（原子观察、置信度评分、本能进化管道）
-* [长篇指南](https://x.com/affaanmustafa/status/2014040193557471352) - 持续学习部分
-
-***
-
-*基于本能的学习：一次一个项目，教会 Claude 您的模式。*
+`continuous-learning-v2` 是自动观察链路，适合从长期行为中提取模式。`learned` skill 是主动沉淀链路，适合在一次明确排查或实现结束后，由用户要求提取高质量经验。两者互补：自动链路积累证据，主动链路负责人工确认和高质量保存。

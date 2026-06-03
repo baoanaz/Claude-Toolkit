@@ -40,6 +40,23 @@ function getClaudeDir() {
 }
 
 /**
+ * Get the continuous-learning-v2 data directory.
+ */
+function getHomunculusDir() {
+  const override = process.env.CLV2_HOMUNCULUS_DIR;
+  if (override && path.isAbsolute(override)) {
+    return override;
+  }
+
+  const xdgDataHome = process.env.XDG_DATA_HOME;
+  if (xdgDataHome && path.isAbsolute(xdgDataHome)) {
+    return path.join(xdgDataHome, 'claude-toolkit-homunculus');
+  }
+
+  return path.join(getHomeDir(), '.local', 'share', 'claude-toolkit-homunculus');
+}
+
+/**
  * Get the sessions directory
  */
 function getSessionsDir() {
@@ -586,6 +603,7 @@ module.exports = {
   // Directories
   getHomeDir,
   getClaudeDir,
+  getHomunculusDir,
   getSessionsDir,
   getLegacySessionsDir,
   getSessionSearchDirs,

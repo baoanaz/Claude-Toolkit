@@ -10,7 +10,7 @@
     {
       "name": "claude-toolkit",
       "source": "./",
-      "description": "Claude Code 工具套件：C/C++ + AI Agent，内置持续学习 v2、TDD/代码审查/安全工作流",
+      "description": "Claude Code 工具套件：C/C++ + AI Agent，内置自动持续学习、主动知识沉淀、TDD/代码审查/安全工作流",
       "version": "1.0.0",
       "author": {
         "name": "xuwenzheng"

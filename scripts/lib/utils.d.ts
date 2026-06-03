@@ -18,6 +18,9 @@ export function getHomeDir(): string;
 /** Get the Claude config directory (~/.claude) */
 export function getClaudeDir(): string;
 
+/** Get the continuous-learning-v2 data directory */
+export function getHomunculusDir(): string;
+
 /** Get the canonical CT sessions directory (~/.claude/session-data) */
 export function getSessionsDir(): string;
 

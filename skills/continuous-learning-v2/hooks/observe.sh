@@ -12,8 +12,20 @@
 
 set -e
 
-# Hook phase from CLI argument: "pre" (PreToolUse) or "post" (PostToolUse)
-HOOK_PHASE="${1:-post}"
+# Hook phase from CLI argument: "pre" (PreToolUse) or "post" (PostToolUse).
+# Manual settings.json installs can call this script without the plugin
+# wrapper's positional phase argument, but Claude Code still exposes the hook
+# event name in CLAUDE_HOOK_EVENT_NAME. Fall back to that env var before
+# defaulting to post so manually registered PreToolUse hooks are recorded as
+# tool_start instead of being silently misclassified as tool_complete.
+HOOK_PHASE="${1:-}"
+if [ -z "$HOOK_PHASE" ]; then
+  case "${CLAUDE_HOOK_EVENT_NAME:-}" in
+    PreToolUse|pretooluse|pre_tool_use|pre) HOOK_PHASE="pre" ;;
+    PostToolUse|posttooluse|post_tool_use|post) HOOK_PHASE="post" ;;
+    *) HOOK_PHASE="post" ;;
+  esac
+fi
 
 # ─────────────────────────────────────────────
 # Read stdin first (before project detection)
@@ -104,7 +116,13 @@ except(KeyError, TypeError, ValueError):
 # If cwd was provided in stdin, use it for project detection
 if [ -n "$STDIN_CWD" ] && [ -d "$STDIN_CWD" ]; then
   _GIT_ROOT=$(git -C "$STDIN_CWD" rev-parse --show-toplevel 2>/dev/null || true)
-  export CLAUDE_PROJECT_DIR="${_GIT_ROOT:-$STDIN_CWD}"
+  if [ -n "$_GIT_ROOT" ]; then
+    export CLAUDE_PROJECT_DIR="$_GIT_ROOT"
+    unset CLV2_NO_PROJECT
+  else
+    unset CLAUDE_PROJECT_DIR
+    export CLV2_NO_PROJECT=1
+  fi
 fi
 
 # ─────────────────────────────────────────────
@@ -115,7 +133,9 @@ fi
 # Sourcing detect-project.sh creates project-scoped directories and updates
 # projects.json, so automated sessions must return before that point.
 
-CONFIG_DIR="${HOME}/.claude/homunculus"
+# shellcheck disable=SC1091
+. "$(dirname "$0")/../scripts/lib/homunculus-dir.sh"
+CONFIG_DIR="$(_clv2_resolve_homunculus_dir)"
 
 # Skip if disabled (check both default and CLV2_CONFIG-derived locations)
 if [ -f "$CONFIG_DIR/disabled" ]; then

@@ -11,6 +11,7 @@
 
 const {
   getClaudeDir,
+  getHomunculusDir,
   getSessionsDir,
   getSessionSearchDirs,
   getLearnedSkillsDir,
@@ -325,7 +326,7 @@ function extractInstinctAction(content) {
 }
 
 function summarizeActiveInstincts(observerContext) {
-  const homunculusDir = path.join(getClaudeDir(), 'homunculus');
+  const homunculusDir = getHomunculusDir();
   const globalDirs = [
     { dir: path.join(homunculusDir, 'instincts', 'personal'), scope: 'global' },
     { dir: path.join(homunculusDir, 'instincts', 'inherited'), scope: 'global' },
