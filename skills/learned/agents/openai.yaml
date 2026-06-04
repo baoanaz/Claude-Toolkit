@@ -1,0 +1,4 @@
+interface:
+  display_name: "learned"
+  short_description: "从会话中提取可复用经验并保存为 skill"
+  default_prompt: "使用 $learned 回顾当前会话，经过重叠检查和质量门控后，将可复用知识保存为 Codex skill 或吸收到现有 skill。"
