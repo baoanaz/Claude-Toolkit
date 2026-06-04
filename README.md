@@ -22,6 +22,23 @@
 
 安装完成后，Claude Code 就可以加载这个仓库提供的 `commands/` 与 `skills/` 能力。
 
+### Codex 安装
+
+如果你使用 Codex，可以把本仓库作为 repo-scoped marketplace 添加：
+
+```bash
+# 添加 GitHub 仓库市场
+codex plugin marketplace add baoanaz/Claude-Toolkit
+
+# 或者添加本地开发 checkout
+codex plugin marketplace add /absolute/path/to/Claude-Toolkit
+```
+
+然后在 Codex 的插件列表中安装或启用 `claude-toolkit`。
+
+Codex 入口由 `.codex-plugin/plugin.json` 提供，当前会加载 `skills/` 目录。Claude Code 专用的
+`commands/`、`hooks/`、`agents/` 与 `rules/` 保留在仓库中，但不会通过 Codex manifest 自动注册。
+
 ### 第三步：按需安装 rules
 
 插件安装不会自动分发 `rules/` 目录中的规则文件。如果你希望同时使用规则约束，请继续看下面的"安装 rules"章节。
@@ -74,6 +91,14 @@ Claude-Toolkit/
 |   |-- marketplace.json         # 自托管市场注册信息
 |   `-- README.md                # 插件使用说明
 |
+|-- .codex-plugin/               # Codex 插件元数据
+|   |-- plugin.json              # Codex 插件入口定义
+|   `-- README.md                # Codex 插件安装说明
+|
+|-- .agents/
+|   `-- plugins/
+|       `-- marketplace.json     # Codex repo-scoped marketplace
+|
 |-- agents/                      # 10 个专业子代理
 |   |-- planner.md               # 功能规划与任务拆解
 |   |-- architect.md             # 系统架构设计决策
@@ -103,7 +128,7 @@ Claude-Toolkit/
 |
 |-- skills/                      # 4 个技能包
 |   |-- continuous-learning-v2/  # 基于 instinct 的持续学习
-|   |-- jira-integration/        # Jira MCP/REST 操作模式
+|   |-- learned-jira-bug-workflow/ # Jira BUG 工作流
 |   |-- learned/                 # 主动提取并沉淀会话模式
 |   `-- strategic-compact/       # 逻辑间隔主动压缩策略
 |
