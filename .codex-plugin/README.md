@@ -9,7 +9,10 @@ This directory contains the Codex plugin manifest for Claude-Toolkit.
 `-- plugin.json   # Codex plugin manifest
 .agents/plugins/
 `-- marketplace.json
-skills/           # Codex skill source of truth
+plugins/claude-toolkit/
+|-- .codex-plugin/plugin.json
+`-- skills -> ../../skills
+skills/           # Shared skill source of truth
 ```
 
 ## What This Provides
@@ -34,12 +37,13 @@ codex plugin marketplace add baoanaz/Claude-Toolkit
 codex plugin marketplace add /absolute/path/to/Claude-Toolkit
 ```
 
-The marketplace entry points at the repository root so `.codex-plugin/plugin.json`
-and `skills/` resolve from one shared source of truth.
+The marketplace entry points at `plugins/claude-toolkit/`. That directory keeps a
+Codex plugin manifest plus a `skills` symlink to the repository root `skills/`
+directory, so Claude Code and Codex share one skill source of truth.
 
 ## Notes
 
-- The `skills/` directory at the repository root is the Codex plugin source of truth.
+- The `skills/` directory at the repository root is the shared skill source of truth.
 - Claude Code `commands/`, `hooks/`, `agents/`, and `rules/` remain in the repository
   for Claude-specific installation paths; the Codex manifest intentionally does not
   declare unsupported `commands` or `hooks` fields.

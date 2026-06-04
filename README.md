@@ -28,10 +28,9 @@
 
 ```bash
 # 添加 GitHub 仓库市场
-codex plugin marketplace add baoanaz/Claude-Toolkit
+codex plugin marketplace add https://github.com/baoanaz/Claude-Toolkit
+codex plugin add claude-toolkit@claude-toolkit
 
-# 或者添加本地开发 checkout
-codex plugin marketplace add /absolute/path/to/Claude-Toolkit
 ```
 
 然后在 Codex 的插件列表中安装或启用 `claude-toolkit`。
@@ -98,6 +97,12 @@ Claude-Toolkit/
 |-- .agents/
 |   `-- plugins/
 |       `-- marketplace.json     # Codex repo-scoped marketplace
+|
+|-- plugins/
+|   `-- claude-toolkit/          # Codex marketplace 指向的插件根目录
+|       |-- .codex-plugin/
+|       |   `-- plugin.json
+|       `-- skills -> ../../skills
 |
 |-- agents/                      # 10 个专业子代理
 |   |-- planner.md               # 功能规划与任务拆解

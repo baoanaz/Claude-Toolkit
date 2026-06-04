@@ -1,0 +1,43 @@
+{
+  "name": "claude-toolkit",
+  "version": "1.0.0",
+  "description": "Codex-ready Claude-Toolkit workflows for Linux C/C++ embedded development, AI agent engineering, continuous learning, knowledge capture, planning, Jira triage, and code review.",
+  "author": {
+    "name": "xuwenzheng"
+  },
+  "repository": "https://github.com/baoanaz/Claude-Toolkit",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "claude-code",
+    "cpp",
+    "embedded",
+    "ai-agent",
+    "continuous-learning",
+    "knowledge-capture",
+    "tdd",
+    "code-review",
+    "jira"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Claude Toolkit",
+    "shortDescription": "Codex-ready skills for embedded C/C++, agent workflows, learning, planning, and review.",
+    "longDescription": "Claude-Toolkit packages reusable Codex skills for Linux C/C++ embedded development, AI agent engineering, continuous-learning workflows, session knowledge capture, Jira-style bug triage, strategic context compaction, planning, and code review. Claude Code slash commands, hooks, and rules remain available in the repository for Claude-specific installation paths.",
+    "developerName": "xuwenzheng",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/baoanaz/Claude-Toolkit",
+    "privacyPolicyURL": "https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement",
+    "termsOfServiceURL": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service",
+    "defaultPrompt": [
+      "Use the learned skill when the user asks to extract reusable patterns from a session.",
+      "Use the learned-jira-bug-workflow skill when the user mentions Jira, BUG, issue keys, or Jira links.",
+      "Use the strategic-compact skill when long-running work needs structured context compression."
+    ]
+  }
+}

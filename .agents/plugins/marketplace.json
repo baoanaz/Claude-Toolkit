@@ -9,7 +9,7 @@
       "version": "1.0.0",
       "source": {
         "source": "local",
-        "path": "./"
+        "path": "./plugins/claude-toolkit"
       },
       "policy": {
         "installation": "AVAILABLE",
